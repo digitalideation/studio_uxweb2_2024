@@ -3,7 +3,7 @@
 
 <head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Ripple Demo</title>
+    <title>Basic Socket template</title>
     <style>
         body,
         html {
@@ -45,36 +45,50 @@
                 begin="1.2s"></animate>
             <animate class="last" attributeName="opacity" dur="2s" values="1;0" keyTimes="0;1" keySplines="0.2 0 0.8 1"
                 calcMode="spline" begin="1.2s" fill="freeze"></animate>
+
         </circle>
     </svg>
 
 </body>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-
-    const socket = io();
     let offset_x = 0;
 
-    // send dimensions of the window to the server
-    send_dimensions();
+    const socket = io();
+    // received a message from the server
+    socket.on("msg", msg => {
+        console.log(msg);
+        socket.emit('dimensions', { width: document.documentElement.clientWidth });
+    });
+
+    // received a message from another client
+    socket.on("client_msg", msg => {
+        console.log(msg);
+    });
+
+    socket.on("connect", () => {
+        socket.emit("client_msg", "Hello from the client " + socket.id);
+    });
 
     // received a ripple event from another client
     socket.on("ripple", (msg) => {
-        add_ripple(msg.x -offset_x, msg.y);
+        add_ripple(msg.x - offset_x, msg.y);
     });
 
     socket.on("offset_x", (offset) => {
         console.log(offset);
-        offset_x =offset;
+        offset_x = offset;
     });
+
 
     // create a ripple on click and send it to the other clients
     document.addEventListener('click', e => {
         add_ripple(e.pageX, e.pageY);
-        socket.emit('ripple', { x: offset_x + e.pageX , y: e.pageY });
+        socket.emit('ripple', { x: offset_x + e.pageX, y: e.pageY });
         let audioPlayer = document.getElementById('audioPlayer');
         audioPlayer.currentTime = 0
         audioPlayer.play();
+
     });
 
     function add_ripple(x, y) {
@@ -103,14 +117,7 @@
         document.body.appendChild(new_ripple);
     }
 
-    window.addEventListener('resize', function(event) {
-        // TODO let the server handle window resize
-   //     socket.emit('dimensions', { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
-    });
 
-    function send_dimensions() {
-        socket.emit('dimensions', { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
-    }
 
 </script>
 
